@@ -3248,3 +3248,37 @@ describe("Form omitExtraData and liveOmit", () => {
     expect(node.querySelectorAll(".error-detail li")).to.have.length.of(2);
   });
 });
+
+describe("Form rerenders", () => {
+  let sandbox;
+
+  beforeEach(() => {
+    sandbox = createSandbox();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  it("should not rerender when no properties change", () => {
+    const setState = sandbox.spy(Form.prototype, "setState");
+    const props = {
+      schema: { type: "integer" },
+    };
+
+    const comp = renderIntoDocument(
+      <Form
+        onSubmit={sandbox.spy()}
+        onError={sandbox.spy()}
+        onChange={sandbox.spy()}
+        {...props}
+      />
+    );
+
+    // React can give us new props when no content has changed.
+    comp.UNSAFE_componentWillReceiveProps({ ...props });
+
+    // In this case, we should not have called setState.
+    sinon.assert.notCalled(setState);
+  });
+});
