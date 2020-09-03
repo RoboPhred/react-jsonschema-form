@@ -3249,7 +3249,7 @@ describe("Form omitExtraData and liveOmit", () => {
   });
 });
 
-describe("Form rerenders", () => {
+describe("Form performance", () => {
   let sandbox;
 
   beforeEach(() => {
@@ -3275,10 +3275,45 @@ describe("Form rerenders", () => {
       />
     );
 
-    // React can give us new props when no content has changed.
+    // If we receive the same properties as we previously did...
     comp.UNSAFE_componentWillReceiveProps({ ...props });
 
-    // In this case, we should not have called setState.
+    // ... then nothing has changed and we should not recalculate state.
     sinon.assert.notCalled(setState);
+  });
+
+  it("should not change the form data object if form data has not changed", () => {
+    const setState = sandbox.spy(Form.prototype, "setState");
+    const props = {
+      schema: {
+        type: "object",
+        properties: {
+          value: { type: "integer", default: 3 },
+        },
+      },
+      formData: {
+        value: 3,
+      },
+    };
+
+    const comp = renderIntoDocument(
+      <Form
+        onSubmit={sandbox.spy()}
+        onError={sandbox.spy()}
+        onChange={sandbox.spy()}
+        {...props}
+      />
+    );
+
+    // Change a property but make no changes to formData
+    comp.UNSAFE_componentWillReceiveProps({ ...props, liveValidate: true });
+
+    // setState will have been called at minimum with validation data.
+    sinon.assert.calledOnce(setState);
+
+    // Ensure we did not regenerate formData, which will cause a tree rerender.
+    const newState = setState.getCall(0).args[0];
+    // Check formData for reference equality.
+    expect(newState.formData).to.eq(props.formData);
   });
 });
